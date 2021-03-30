@@ -7,7 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
 from auth import AuthError, requires_auth
-from models import db, Recipe, Ingredient, RecipeIngredient, Unit, setup_db, db_drop_and_create_all
+from models import db, Recipe, Ingredient, RecipeIngredient, Unit, setup_db
 
 def create_app(test_config=None):
     # create and configure the app
@@ -15,7 +15,6 @@ def create_app(test_config=None):
     app.config.from_object("config")
 
     setup_db(app)
-    db_drop_and_create_all()
     CORS(app)
 
     #  Routes
