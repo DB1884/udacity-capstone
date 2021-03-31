@@ -1,13 +1,11 @@
-import os
 import json
-import sys
-from flask import Flask, flash, render_template, request, abort, jsonify
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from auth import AuthError, requires_auth
 from models import db, Recipe, Ingredient, RecipeIngredient, Unit, setup_db
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -28,14 +26,14 @@ def create_app(test_config=None):
         recipes = Recipe.query.all()
         return jsonify({
             "success": True,
-            "recipe": [{recipe.recipe_id: recipe.recipe_name} for recipe in recipes]
+            "recipes": [
+                {recipe.recipe_id: recipe.recipe_name} for recipe in recipes
+            ]
         })
-        #return render_template("recipes.html", recipes=recipes)
-
 
     @app.route("/recipes/<int:id>", methods=["GET"])
-    #@requires_auth("get:recipes")
-    def get_recipe_details(id):
+    @requires_auth("get:recipes")
+    def get_recipe_details(token, id):
         recipe = Recipe.query.filter(Recipe.recipe_id == id).first_or_404()
         recipe = {
             "name": recipe.recipe_name,
@@ -44,7 +42,9 @@ def create_app(test_config=None):
                 {
                     "name": ingredient.ingredient.ingredient_name,
                     "amount": ingredient.amount,
-                    "unit": Unit.query.filter(Unit.unit_id == ingredient.unit_id).first_or_404().unit_name,
+                    "unit": Unit.query.filter(
+                        Unit.unit_id == ingredient.unit_id
+                    ).first_or_404().unit_name,
                 }
                 for ingredient in recipe.ingredients
             ]
@@ -53,34 +53,32 @@ def create_app(test_config=None):
             "success": True,
             "recipe": recipe
         })
-        #return render_template("recipe_details.html", recipe=recipe)
-
 
     @app.route("/ingredients", methods=["GET"])
-    #@requires_auth("get:ingredients")
-    def get_ingredients():
+    @requires_auth("get:ingredients")
+    def get_ingredients(token):
         ingredients = Ingredient.query.all()
         return jsonify({
             "success": True,
-            "ingredients": [{ingredient.ingredient_id: ingredient.ingredient_name} for ingredient in ingredients]
+            "ingredients": [
+                {
+                    ingredient.ingredient_id: ingredient.ingredient_name
+                } for ingredient in ingredients
+            ]
         })
-        #return render_template("ingredients.html", ingredients=ingredients)
-
 
     @app.route("/units", methods=["GET"])
-    #@requires_auth("get:units")
-    def get_units():
+    @requires_auth("get:units")
+    def get_units(token):
         units = Unit.query.all()
         return jsonify({
             "success": True,
             "units": [{unit.unit_id: unit.unit_name} for unit in units]
         })
-        return render_template("units.html", units=units)
-
 
     @app.route("/recipes", methods=["POST"])
-    #@requires_auth("post:recipes")
-    def post_recipes():
+    @requires_auth("post:recipes")
+    def post_recipes(token):
         recipe_data = request.get_json()
         recipe = Recipe(
             recipe_name=recipe_data.get("recipe_name"),
@@ -92,10 +90,9 @@ def create_app(test_config=None):
             "recipe": recipe.recipe_id,
         })
 
-
     @app.route("/ingredients", methods=["POST"])
-    #@requires_auth("post:ingredients")
-    def post_ingredients():
+    @requires_auth("post:ingredients")
+    def post_ingredients(token):
         ingredient_data = request.get_json()
         ingredient = Ingredient(
             ingredient_name=ingredient_data.get("ingredient_name"),
@@ -106,10 +103,9 @@ def create_app(test_config=None):
             "ingredient": ingredient.ingredient_id,
         })
 
-
     @app.route("/units", methods=["POST"])
-    #@requires_auth("post:units")
-    def post_units():
+    @requires_auth("post:units")
+    def post_units(token):
         unit_data = request.get_json()
         unit = Unit(
             unit_name=unit_data.get("unit_name"),
@@ -120,10 +116,9 @@ def create_app(test_config=None):
             "unit": unit.unit_id,
         })
 
-
     @app.route("/recipes/<int:id>", methods=["PATCH"])
-    #@requires_auth("patch:recipes")
-    def patch_recipes(id):
+    @requires_auth("patch:recipes")
+    def patch_recipes(token, id):
         recipe_data = request.get_json()
         recipe = Recipe.query.filter(Recipe.recipe_id == id).first_or_404()
         recipe.recipe_name = recipe_data.get("recipe_name")
@@ -134,10 +129,9 @@ def create_app(test_config=None):
             "recipe": recipe.recipe_id,
         })
 
-
     @app.route("/recipes/<int:id>/ingredients", methods=["PATCH"])
-    #@requires_auth("patch:recipes")
-    def patch_recipes_ingredients(id):
+    @requires_auth("patch:recipes")
+    def patch_recipes_ingredients(token, id):
         recipe_data = request.get_json()
         for ingredient in recipe_data.get("recipe_ingredients"):
             recipe_ingredient = RecipeIngredient(
@@ -149,7 +143,7 @@ def create_app(test_config=None):
             db.session.add(recipe_ingredient)
         try:
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
         finally:
             db.session.close()
@@ -158,10 +152,9 @@ def create_app(test_config=None):
             "recipe": id,
         })
 
-
     @app.route("/recipes/<int:id>", methods=["DELETE"])
-    #@requires_auth("delete:recipes")
-    def delete_recipes(id):
+    @requires_auth("delete:recipes")
+    def delete_recipes(token, id):
         recipe = Recipe.query.filter(Recipe.recipe_id == id).first_or_404()
         recipe.delete()
         return jsonify({
@@ -169,21 +162,21 @@ def create_app(test_config=None):
             "delete": recipe.recipe_id,
         })
 
-
     @app.route("/ingredients/<int:id>", methods=["DELETE"])
-    #@requires_auth("delete:ingredients")
-    def delete_ingredients(id):
-        ingredient = Ingredient.query.filter(Ingredient.ingredient_id == id).first_or_404()
+    @requires_auth("delete:ingredients")
+    def delete_ingredients(token, id):
+        ingredient = Ingredient.query.filter(
+            Ingredient.ingredient_id == id
+        ).first_or_404()
         ingredient.delete()
         return jsonify({
             "success": True,
             "delete": ingredient.ingredient_id,
         })
 
-
     @app.route("/units/<int:id>", methods=["DELETE"])
-    #@requires_auth("delete:units")
-    def delete_units(id):
+    @requires_auth("delete:units")
+    def delete_units(token, id):
         unit = Unit.query.filter(Unit.unit_id == id).first_or_404()
         unit.delete()
         return jsonify({
@@ -191,10 +184,9 @@ def create_app(test_config=None):
             "delete": unit.unit_id,
         })
 
-
     # Error handlers
     @app.errorhandler(400)
-    def not_found(error):
+    def bad_request(error):
         return jsonify({
             "success": False,
             "error": 400,
@@ -210,7 +202,7 @@ def create_app(test_config=None):
             }), 404
 
     @app.errorhandler(405)
-    def not_found(error):
+    def not_allowed(error):
         return jsonify({
             "success": False,
             "error": 405,
@@ -233,8 +225,8 @@ def create_app(test_config=None):
             "message": error.error["description"],
             }), error.status_code
 
-
     return app
+
 
 app = create_app()
 

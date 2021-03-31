@@ -2,7 +2,7 @@
 
 # Recipe API Backend
 
-This API is designed to store recipes, in a standardised format. While very basic at this stage, just supporting CRUD functions on recipes and ingredients, the motivation is to provide a platform in future that allows users to select recipes which will then prepare a shopping list based on the required ingredients.
+This API is designed to store recipes, ingredients and units of measurement in a standardised format. While very basic at this stage, just supporting CRUD functions on recipes and ingredients, the motivation is to provide a platform in future that allows users to select a number of recipes and then prepare a shopping list based on the required ingredients.
 
 The API is running live at https://no-frills-recipe.herokuapp.com/
 
@@ -10,30 +10,30 @@ The API is running live at https://no-frills-recipe.herokuapp.com/
 
 ### Installing Dependencies
 
-#### Python 3.7
+#### Python 3.8.5
 
-Follow instructions to install the latest version of python for your platform in the [python docs](https://docs.python.org/3/using/unix.html#getting-and-installing-the-latest-version-of-python)
+The project has been tested using Python 3.8.5 but should work on most versions of Python 3. Instructions for installing the newest version of Python on your machine can be found in the [python docs](https://docs.python.org/3/using/unix.html#getting-and-installing-the-latest-version-of-python)
 
 #### Virtual Enviornment
 
-Setup a virtual envrionment for running the  for your platform can be found in the [python docs](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
+Setup a virtual envrionment for running the for your platform. Again instructions for doing this can be found in the [python docs](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
 
 #### PIP Dependencies
 
-Once the virtual envrionment is up and running, install dependencies by running:
+Once the virtual envrionment is up and running and you are within that environment, install dependencies by running:
 
 ```pip install -r requirements.txt```
 
 This will install all of the required packages we selected within the `requirements.txt` file.
 
-## Database Setup
+## Local database setup
 
-With Postgres running, load some test data into a database using the recipe.psql file provided. From the main project directory in your terminal terminal run:
+With Postgres running, load some test data into a database using the recipe.psql file provided. From the main project directory in your terminal terminal run the following to create the db, apply migrations and load test data:
 
 ```
 createdb recipeapp
-export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/recipeapp'
-flask db upgrade
+source setup.sh
+python manage.py db upgrade
 psql recipeapp < recipe.psql
 ```
 
@@ -41,15 +41,42 @@ You may need to update the database URL depending on your settings.
 
 ## Running the app locally
 
-From within the main directory ensure you are within your virtual envrionment with the dependencies installed.
-
-To then run the app locally, execute:
+Once you've installed the dependencies and setup the database, you're ready to run the app locally. To do this, execute the following:
 
 ```
 export FLASK_APP=app
 export FLASK_ENV=development
 flask run
 ```
+
+Three test users have been configured in Auth0 with the following roles and credentials:
+
+* Admin:
+
+This role has access to all routes.
+
+Email: admin@test.com
+Password: Z72Ttoon5k6y
+
+* Chef:
+
+This role has access to add new recipes, ingredients and units and amend existing recipes. 
+
+Email: chef@test.com
+Password: Z72Ttoon5k6y
+
+* Viewer:
+
+This role has access to view recipes, ingredients and units
+
+Email: viewer@test.com
+Password: Z72Ttoon5k6y
+
+To obtain a JWT for any of these users please login using the link:
+
+https://fsnd-recipe.eu.auth0.com/authorize?audience=recipe&response_type=token&client_id=YMrwzoezQAt2heWLhSqBj69VgaV43OZ5&redirect_uri=http://localhost:5000/
+
+The token will be in the URL bar following successful login and can then be used to make test requests. Alternatively existing valid tokens for each role are also provided within the setup.sh file.
 
 ## Error Handling
 
@@ -80,7 +107,7 @@ GET /recipes
 - Request arguments: None
 - Returns: An object with two keys, success and recipes.
 - Example request:
-    `curl https://no-frills-recipe.herokuapp.com/recipes`
+    `curl -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/recipes`
 - Example response:
     ```
     {
@@ -100,7 +127,7 @@ GET /recipes/<int:recipe_id>
 - Request arguments: None
 - Returns: An object with two keys, success, and recipe. Recipe is a dictionary object with the keys name, description and ingredients. Ingredients is a list containing objects with keys name, amount and unit.
 - Example request:
-    `curl https://no-frills-recipe.herokuapp.com/recipes/1`
+    `curl -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/recipes/1`
 - Example response:
     ```
     {
@@ -130,7 +157,7 @@ GET /ingredients
 - Request arguments: None
 - Returns: An object with two keys, success and ingredients.
 - Example request:
-    `curl https://no-frills-recipe.herokuapp.com/ingredients`
+    `curl -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/ingredients`
 - Example response:
     ```
     {
@@ -152,7 +179,7 @@ GET /units
 - Request arguments: None
 - Returns: An object with two keys, success and units.
 - Example request:
-    `curl https://no-frills-recipe.herokuapp.com/units`
+    `curl -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/units`
 - Example response:
     ```
     {
@@ -181,7 +208,7 @@ POST /recipes
     ```
 - Returns: An object with two keys, success and recipe which will be the new recipe ID.
 - Example request:
-    `curl -X POST -H "Content-Type: application/json" --data '{"recipe_name": "Cheese on toast", "description": "Hot gooey bread"}' https://no-frills-recipe.herokuapp.com/recipes`
+    `curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" --data '{"recipe_name": "Cheese on toast", "description": "Hot gooey bread"}' https://no-frills-recipe.herokuapp.com/recipes`
 - Example response:
     ```
     {
@@ -201,7 +228,7 @@ POST /ingredients
     ```
 - Returns: An object with two keys, success and ingredient which will be the new ingredient ID.
 - Example request:
-    `curl -X POST -H "Content-Type: application/json" --data '{"recipe_name": "Cheese on toast"}' https://no-frills-recipe.herokuapp.com/ingredients`
+    `curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" --data '{"recipe_name": "Cheese on toast"}' https://no-frills-recipe.herokuapp.com/ingredients`
 - Example response:
     ```
     {
@@ -221,7 +248,7 @@ POST /units
     ```
 - Returns: An object with two keys, success and unit which will be the new recipe ID.
 - Example request:
-    `curl -X POST -H "Content-Type: application/json" --data '{"unit_name": "dessert spoons"}' https://no-frills-recipe.herokuapp.com/units`
+    `curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" --data '{"unit_name": "dessert spoons"}' https://no-frills-recipe.herokuapp.com/units`
 - Example response:
     ```
     {
@@ -242,7 +269,7 @@ PATCH /recipes/<int:id>
     ```
 - Returns: An object with two keys, success and recipe which will be the modified recipe ID.
 - Example request:
-    `curl -X PATCH -H "Content-Type: application/json" --data '{"recipe_name": "Double cheese on toast", "description": "Hot double gooey bread"}' https://no-frills-recipe.herokuapp.com/recipes/12`
+    `curl -X PATCH -H "Content-Type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" --data '{"recipe_name": "Double cheese on toast", "description": "Hot double gooey bread"}' https://no-frills-recipe.herokuapp.com/recipes/12`
 - Example response:
     ```
     {
@@ -273,7 +300,7 @@ PATCH /recipes/<int:id>/ingredients
     ```
 - Returns: An object with two keys, success and recipe which will be the modified recipe ID.
 - Example request:
-    `curl -X PATCH -H "Content-Type: application/json" -d '{"recipe_ingredients": [{"ingredient_id": 1, "unit_id": 1, "amount": 250}, {"ingredient_id": 1, "unit_id": 2, "amount": 5}]}' https://no-frills-recipe.herokuapp.com/recipes/1/ingredients`
+    `curl -X PATCH -H "Content-Type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" --data '{"recipe_ingredients": [{"ingredient_id": 1, "unit_id": 1, "amount": 250}, {"ingredient_id": 1, "unit_id": 2, "amount": 5}]}' https://no-frills-recipe.herokuapp.com/recipes/1/ingredients`
 - Example response:
     ```
     {
@@ -288,7 +315,7 @@ DELETE /recipes/<int:id>
 - Request arguments: None
 - Returns: An object with two keys, success and delete which will include the deleted recipe ID.
 - Example request:
-    `curl -X DELETE https://no-frills-recipe.herokuapp.com/recipes/1`
+    `curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/recipes/1`
 - Example response:
     ```
     {
@@ -303,7 +330,7 @@ DELETE /ingredients/<int:id>
 - Request arguments: None
 - Returns: An object with two keys, success and delete which will include the deleted ingredient ID.
 - Example request:
-    `curl -X DELETE https://no-frills-recipe.herokuapp.com/ingredients/1`
+    `curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/ingredients/1`
 - Example response:
     ```
     {
@@ -318,7 +345,7 @@ DELETE /units/<int:id>
 - Request arguments: None
 - Returns: An object with two keys, success and delete which will include the deleted unit ID.
 - Example request:
-    `curl -X DELETE https://no-frills-recipe.herokuapp.com/units/1`
+    `curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" https://no-frills-recipe.herokuapp.com/units/1`
 - Example response:
     ```
     {
@@ -332,8 +359,8 @@ DELETE /units/<int:id>
 
 To run the tests, run
 ```
-dropdb trivia_test
-createdb trivia_test
+dropdb recipe_test
+createdb recipe_test
 psql recipe_test < recipe.psql
 python test_app.py
 ```
