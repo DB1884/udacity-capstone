@@ -33,7 +33,6 @@ class RecipeTestCase(unittest.TestCase):
     def test_successful_get_recipes(self):
         res = self.client().get("/recipes")
         data = json.loads(res.data)
-        print(len(data["recipes"]))
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertTrue(len(data["recipes"]))

@@ -19,18 +19,16 @@ def create_app(test_config=None):
 
     #  Routes
     @app.route("/", methods=["GET"])
-    #@requires_auth("get:recipes")
     def home():
-        return render_template("main.html")
-
+        return jsonify({"success": True})
 
     @app.route("/recipes", methods=["GET"])
-    #@requires_auth("get:recipes")
-    def get_recipes():
+    @requires_auth("get:recipes")
+    def get_recipes(token):
         recipes = Recipe.query.all()
         return jsonify({
             "success": True,
-            "recipes": [recipe.recipe_name for recipe in recipes]
+            "recipe": [{recipe.recipe_id: recipe.recipe_name} for recipe in recipes]
         })
         #return render_template("recipes.html", recipes=recipes)
 
@@ -62,17 +60,9 @@ def create_app(test_config=None):
     #@requires_auth("get:ingredients")
     def get_ingredients():
         ingredients = Ingredient.query.all()
-        ingredients = [
-            {
-                "name": ingredient.ingredient_name,
-                "recipes": [Recipe.query.filter(Recipe.recipe_id == recipe.recipe_id).first_or_404().recipe_name for recipe in ingredient.recipes],
-            }
-            for ingredient in ingredients
-        ]
-        print(ingredients)
         return jsonify({
             "success": True,
-            "ingredients": ingredients
+            "ingredients": [{ingredient.ingredient_id: ingredient.ingredient_name} for ingredient in ingredients]
         })
         #return render_template("ingredients.html", ingredients=ingredients)
 
@@ -83,7 +73,7 @@ def create_app(test_config=None):
         units = Unit.query.all()
         return jsonify({
             "success": True,
-            "units": [unit.unit_name for unit in units]
+            "units": [{unit.unit_id: unit.unit_name} for unit in units]
         })
         return render_template("units.html", units=units)
 
@@ -108,7 +98,7 @@ def create_app(test_config=None):
     def post_ingredients():
         ingredient_data = request.get_json()
         ingredient = Ingredient(
-            ingredient_name=ingredient_data.get("name"),
+            ingredient_name=ingredient_data.get("ingredient_name"),
         )
         ingredient.insert()
         return jsonify({
@@ -122,7 +112,7 @@ def create_app(test_config=None):
     def post_units():
         unit_data = request.get_json()
         unit = Unit(
-            unit_name=unit_data.get("name"),
+            unit_name=unit_data.get("unit_name"),
         )
         unit.insert()
         return jsonify({
@@ -149,7 +139,6 @@ def create_app(test_config=None):
     #@requires_auth("patch:recipes")
     def patch_recipes_ingredients(id):
         recipe_data = request.get_json()
-        print(recipe_data)
         for ingredient in recipe_data.get("recipe_ingredients"):
             recipe_ingredient = RecipeIngredient(
                 recipe_id=id,
@@ -166,7 +155,7 @@ def create_app(test_config=None):
             db.session.close()
         return jsonify({
             "success": True,
-            "recipe_ingredient": recipe_ingredient.recipe_ingredient_id,
+            "recipe": id,
         })
 
 
@@ -204,14 +193,13 @@ def create_app(test_config=None):
 
 
     # Error handlers
-    @app.errorhandler(422)
-    def unprocessable(error):
+    @app.errorhandler(400)
+    def not_found(error):
         return jsonify({
             "success": False,
-            "error": 422,
-            "message": "Unprocessable"
-            }), 422
-
+            "error": 400,
+            "message": "Bad request"
+            }), 400
 
     @app.errorhandler(404)
     def not_found(error):
@@ -221,6 +209,21 @@ def create_app(test_config=None):
             "message": "Resource not found"
             }), 404
 
+    @app.errorhandler(405)
+    def not_found(error):
+        return jsonify({
+            "success": False,
+            "error": 405,
+            "message": "Method not allowed"
+            }), 405
+
+    @app.errorhandler(422)
+    def unprocessable(error):
+        return jsonify({
+            "success": False,
+            "error": 422,
+            "message": "Unprocessable"
+            }), 422
 
     @app.errorhandler(AuthError)
     def auth_error(error):
