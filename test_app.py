@@ -10,7 +10,6 @@ from models import setup_db
 ADMIN_TOKEN = os.environ["ADMIN_TOKEN"]
 CHEF_TOKEN = os.environ["CHEF_TOKEN"]
 VIEWER_TOKEN = os.environ["VIEWER_TOKEN"]
-EXPIRED_TOKEN = os.environ["EXPIRED_TOKEN"]
 
 
 class RecipeTestCase(unittest.TestCase):

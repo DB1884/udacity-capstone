@@ -1,4 +1,4 @@
-# udacity-capstone
+# No Frills Recipe
 
 # Recipe API Backend
 
